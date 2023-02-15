@@ -28,10 +28,15 @@ We generated a scatterplot to evaluate if predictors are linearly related with r
 
 ### Analyze linear regression model
 We began our analysis by fitting a linear regression model to the data. We then evaluated the following linear regression assumptions 
+
 a)	Linearity: By calculating Pearson’s correlation between predictors and response variable
+
 b)	Independence: Using DurbinWatson test.
+
 c)	Homoscedasticity: Using Breusch-Pagan test
+
 d)	Normality: Using Shapiro-Wilk test
+
 In an attempt to normalize the linear regression model, we utilized several techniques to transform the data and used diagnostic tests (stated above) to evaluate our transformed models. 
 
 ### Random forest regression 
@@ -63,21 +68,7 @@ Similar to the letters of recommendation ratings, we used tukey comparisons in t
 
 ## Results
 
-Through analysis and aggregation of PyBers ride sharing data, I have created a summary DataFrame of the ride-sharing data by city type:
-![Untitled](https://user-images.githubusercontent.com/38533045/128641850-3e21c8ba-169f-410f-8c04-e9a6437caa65.png)
 
-A multiple-line graph that shows the total weekly fares for each city type as below:
-![Untitled](https://user-images.githubusercontent.com/38533045/128641892-b614f4d6-46d7-4ca9-a94b-7aa490565583.png)
-
-By reviewing the summary we can see that there are several key findings including:
-
-Urban cities have the highest ridership demand while rural cities have the least.
-
-Urban cities have 4x+ more drivers than suburban cities, suburban cities have 6x + drivers than rural with almost 4.5x the revenue.
-
-Rural cities have the highest average fare per ride and driver.
-
-The summary data shows a relationship in which fare revenue is higher by city type when there is a larger ratio of drivers to rides.
 
 
 ## Summary
