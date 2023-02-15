@@ -1,0 +1,562 @@
+Final Project
+2022-12-01
+admission <- read.csv("C:/Users/tearo/Desktop/Fall 2022/STAT 5302/project/Admission_Predict.csv")
+library(betareg)
+library(lmtest)
+## Loading required package: zoo
+##
+## Attaching package: ’zoo’
+## The following objects are masked from ’package:base’:
+##
+## as.Date, as.Date.numeric
+library(car)
+## Loading required package: carData
+attach(admission)
+admission$Research_f<- as.factor(Research)
+admission$University.Rating_f<- as.factor(University.Rating)
+admission$SOP_f<- as.factor(SOP)
+admission$LOR_f<- as.factor(LOR)
+library('ggplot2')
+ggplot(admission) + geom_point(aes(x=Chance.of.Admit, y=GRE.Score , col=Research))
+
+###We can see people with a higher GRE score usually have Research, and the admitted rate is high.
+ggplot(admission,aes(Chance.of.Admit)) + geom_histogram(aes(fill=..count..),color='black',bins=40)
+
+ggplot(admission,aes(factor(University.Rating),Chance.of.Admit)) + geom_boxplot(aes(fill=University.Rating))
+
+factor(University.Rating)
+
+ggplot(admission,aes(GRE.Score,color=factor(Research)))+geom_density(size=2)+ggtitle("GRE vs Research Distribution")
+
+GRE vs Research Distribution
+###We can see from above density plot that students with research experience are more likely to have a
+higher GRE score.
+ggplot(admission,aes(GRE.Score,TOEFL.Score))+geom_point()+geom_smooth()+ggtitle("GRE vs TOEFL")
+## ‘geom_smooth()‘ using method = ’loess’ and formula ’y ~ x’
+
+ggplot(admission,aes(CGPA,Chance.of.Admit))+geom_point(color="#339966")+facet_grid(Research~.)
+
+Chance.of.Admit
+ggplot(admission) + geom_point(aes(x=Chance.of.Admit, y=CGPA , col=Research))
+
+Research
+admission$admit.index <- factor(admission$Chance.of.Admit> mean(admission$Chance.of.Admit), levels=c(TRUE,FALSE),labels=c("High", "Low"))
+
+
+library(randomForest)
+## randomForest 4.7-1.1
+## Type rfNews() to see new features/changes/bug fixes.
+##
+## Attaching package: ’randomForest’
+## The following object is masked from ’package:ggplot2’:
+##
+## margin
+set.seed(1234)
+fit.forest <- randomForest(admit.index~GRE.Score + TOEFL.Score + University.Rating + SOP + LOR + CGPA + Research,
+data = admission, na.action=na.roughfix, importance=TRUE)
+importance(fit.forest, type = 2)
+## MeanDecreaseGini
+## GRE.Score 49.59466
+8
+## TOEFL.Score 28.80084
+## University.Rating 16.81339
+## SOP 16.72676
+## LOR 14.25913
+## CGPA 55.94079
+## Research 14.03341
+
+
+###From the table, we can tell that CGPA is the most important (55.94), and GRE Score is the second important factor (49.59). Research is the least important (14.03).
+varImpPlot(fit.forest, type = 2)
+Research
+LOR
+SOP
+University.Rating
+TOEFL.Score
+GRE.Score
+CGPA
+0 10 20 30 40 50
+fit.forest
+MeanDecreaseGini
+#Train vs. test splitting
+set.seed(57)
+sample<-sample(c(TRUE,FALSE),
+nrow(admission),
+replace=TRUE,
+prob = c(0.7,0.3))
+train<-admission[sample,]
+test<-admission[!sample,]
+library('rpart')
+library('rpart.plot')
+set.seed(1234)
+9
+dtree <- rpart(admit.index ~ GRE.Score + TOEFL.Score + University.Rating_f + SOP_f + LOR_f + CGPA + Research_f,
+data=train, method="class",parms=list(split="information"))
+dtree.pruned <- prune(dtree, cp=.0125)
+prp(dtree.pruned, type = 2, extra = 104,fallen.leaves = TRUE, main="Decision Tree")
+Decision Tree
+CGPA >= 8.7
+Universi = 3,4,5
+CGPA >= 8.2
+Research = 1
+LOR_f = 4,4.5,5
+High
+.55 .45
+100%
+High
+.94 .06
+43%
+Low
+.25 .75
+57%
+Low
+.45 .55
+27%
+High
+.55 .45
+21%
+High
+.81 .19
+10%
+Low
+.32 .68
+11%
+High
+.62 .37
+3%
+Low
+.22 .78
+8%
+Low
+.06 .94
+6%
+Low
+.07 .93
+30%
+yes no
+dtree.pred <- predict(dtree.pruned, test, type="class")
+accuracy.tree <- mean(dtree.pred == test$admit.index)
+accuracy.tree
+## [1] 0.8828125
+premodel <- betareg(Chance.of.Admit~GRE.Score+TOEFL.Score+SOP+LOR+University.Rating+CGPA+Research, data=train)
+summary(premodel)
+##
+## Call:
+## betareg(formula = Chance.of.Admit ~ GRE.Score + TOEFL.Score + SOP + LOR +
+## University.Rating + CGPA + Research, data = train)
+##
+## Standardized weighted residuals 2:
+## Min 1Q Median 3Q Max
+## -3.7473 -0.4653 0.1039 0.7221 2.3196
+##
+10
+## Coefficients (mean model with logit link):
+## Estimate Std. Error z value Pr(>|z|)
+## (Intercept) -10.038454 0.784456 -12.797 < 2e-16 ***
+## GRE.Score 0.009857 0.003702 2.662 0.00776 **
+## TOEFL.Score 0.015589 0.007085 2.200 0.02778 *
+## SOP -0.041627 0.034927 -1.192 0.23332
+## LOR 0.106694 0.034458 3.096 0.00196 **
+## University.Rating 0.046479 0.031644 1.469 0.14189
+## CGPA 0.682820 0.080292 8.504 < 2e-16 ***
+## Research 0.135998 0.048382 2.811 0.00494 **
+##
+## Phi coefficients (precision model with identity link):
+## Estimate Std. Error z value Pr(>|z|)
+## (phi) 47.223 4.024 11.74 <2e-16 ***
+## ---
+## Signif. codes: 0 ’***’ 0.001 ’**’ 0.01 ’*’ 0.05 ’.’ 0.1 ’ ’ 1
+##
+## Type of estimator: ML (maximum likelihood)
+## Log-likelihood: 392.2 on 9 Df
+## Pseudo R-squared: 0.8289
+## Number of iterations: 18 (BFGS) + 2 (Fisher scoring)
+vif(premodel)
+## GRE.Score TOEFL.Score SOP LOR
+## 3.907817 3.795888 2.763105 2.068714
+## University.Rating CGPA Research
+## 2.757523 4.495790 1.396253
+## all variables
+fit1 <- betareg(Chance.of.Admit ~ GRE.Score + TOEFL.Score + University.Rating_f + SOP_f + LOR_f + CGPA
++ Research_f, data=train)
+summary(fit1)
+##
+## Call:
+## betareg(formula = Chance.of.Admit ~ GRE.Score + TOEFL.Score + University.Rating_f +
+## SOP_f + LOR_f + CGPA + Research_f, data = train)
+##
+## Standardized weighted residuals 2:
+## Min 1Q Median 3Q Max
+## -3.6455 -0.5526 0.1114 0.6697 3.1606
+##
+## Coefficients (mean model with logit link):
+## Estimate Std. Error z value Pr(>|z|)
+## (Intercept) -10.037458 0.796371 -12.604 < 2e-16 ***
+## GRE.Score 0.008775 0.003489 2.515 0.011895 *
+## TOEFL.Score 0.023056 0.006836 3.373 0.000745 ***
+## University.Rating_f2 -0.196752 0.100408 -1.960 0.050050 .
+## University.Rating_f3 -0.187104 0.108595 -1.723 0.084897 .
+## University.Rating_f4 -0.190052 0.128022 -1.485 0.137670
+## University.Rating_f5 0.020895 0.144639 0.144 0.885137
+## SOP_f1.5 0.063081 0.172960 0.365 0.715325
+11
+## SOP_f2 0.082098 0.170620 0.481 0.630393
+## SOP_f2.5 0.213456 0.175976 1.213 0.225136
+## SOP_f3 0.109735 0.177893 0.617 0.537329
+## SOP_f3.5 0.008965 0.177070 0.051 0.959622
+## SOP_f4 -0.011433 0.181222 -0.063 0.949698
+## SOP_f4.5 0.067847 0.190623 0.356 0.721900
+## SOP_f5 0.226359 0.206499 1.096 0.273002
+## LOR_f2 0.176023 0.141781 1.242 0.214415
+## LOR_f2.5 0.164798 0.141752 1.163 0.245001
+## LOR_f3 0.078436 0.141641 0.554 0.579739
+## LOR_f3.5 0.207933 0.144299 1.441 0.149587
+## LOR_f4 0.246122 0.146111 1.684 0.092088 .
+## LOR_f4.5 0.317192 0.159144 1.993 0.046249 *
+## LOR_f5 0.462897 0.169020 2.739 0.006168 **
+## CGPA 0.655348 0.076335 8.585 < 2e-16 ***
+## Research_f1 0.168599 0.046148 3.653 0.000259 ***
+##
+## Phi coefficients (precision model with identity link):
+## Estimate Std. Error z value Pr(>|z|)
+## (phi) 55.185 4.708 11.72 <2e-16 ***
+## ---
+## Signif. codes: 0 ’***’ 0.001 ’**’ 0.01 ’*’ 0.05 ’.’ 0.1 ’ ’ 1
+##
+## Type of estimator: ML (maximum likelihood)
+## Log-likelihood: 412.2 on 25 Df
+## Pseudo R-squared: 0.8582
+## Number of iterations: 35 (BFGS) + 2 (Fisher scoring)
+bptest(fit1)
+##
+## studentized Breusch-Pagan test
+##
+## data: fit1
+## BP = 41.57, df = 23, p-value = 0.01018
+shapiro.test(resid(fit1))
+##
+## Shapiro-Wilk normality test
+##
+## data: resid(fit1)
+## W = 0.95971, p-value = 7.175e-07
+12
+plot(fit1)
+0 50 100 150 200 250
+−3 −2 −1
+0 1 2
+3
+Obs. number
+Standardized weighted residuals 2
+betareg(formula = Chance.of.Admit ~ GRE.Score + TOEFL.Score + 
+ University.Rating_f + SOP_f + LOR_f + CGPA + Research_f, 
+ data = train)
+Residuals vs indices of obs.
+13
+0 50 100 150 200 250
+0.00 0.04 0.08 0.12
+Obs. number
+Cook's distance
+betareg(formula = Chance.of.Admit ~ GRE.Score + TOEFL.Score + 
+ University.Rating_f + SOP_f + LOR_f + CGPA + Research_f, 
+ data = train)
+Cook's distance plot
+14
+0.4 0.5 0.6 0.7 0.8 0.9
+0.05 0.15 0.25 0.35
+Predicted values
+Generalized leverage
+betareg(formula = Chance.of.Admit ~ GRE.Score + TOEFL.Score + 
+ University.Rating_f + SOP_f + LOR_f + CGPA + Research_f, 
+ data = train)
+Generalized leverage vs predicted values
+15
+−0.5 0.0 0.5 1.0 1.5 2.0 2.5 3.0
+−3 −2 −1
+0 1 2
+3
+Linear predictor
+Standardized weighted residuals 2
+betareg(formula = Chance.of.Admit ~ GRE.Score + TOEFL.Score + 
+ University.Rating_f + SOP_f + LOR_f + CGPA + Research_f, 
+ data = train)
+Residuals vs linear predictor
+### removed SOP
+fit2 <- betareg(Chance.of.Admit ~ GRE.Score + TOEFL.Score + University.Rating_f + LOR_f+ CGPA
++ Research_f, data=train)
+summary(fit2)
+##
+## Call:
+## betareg(formula = Chance.of.Admit ~ GRE.Score + TOEFL.Score + University.Rating_f +
+## LOR_f + CGPA + Research_f, data = train)
+##
+## Standardized weighted residuals 2:
+## Min 1Q Median 3Q Max
+## -3.6460 -0.5037 0.1334 0.6583 2.8788
+##
+## Coefficients (mean model with logit link):
+## Estimate Std. Error z value Pr(>|z|)
+## (Intercept) -9.866798 0.790833 -12.476 < 2e-16 ***
+## GRE.Score 0.009375 0.003553 2.639 0.008327 **
+## TOEFL.Score 0.019128 0.006808 2.810 0.004960 **
+## University.Rating_f2 -0.140763 0.088055 -1.599 0.109912
+## University.Rating_f3 -0.199649 0.096854 -2.061 0.039271 *
+## University.Rating_f4 -0.173642 0.116461 -1.491 0.135964
+## University.Rating_f5 0.061469 0.132793 0.463 0.643442
+## LOR_f2 0.163816 0.142587 1.149 0.250601
+## LOR_f2.5 0.164426 0.145029 1.134 0.256901
+## LOR_f3 0.098579 0.141182 0.698 0.485025
+16
+## LOR_f3.5 0.222636 0.143265 1.554 0.120180
+## LOR_f4 0.243792 0.144874 1.683 0.092417 .
+## LOR_f4.5 0.340775 0.157614 2.162 0.030611 *
+## LOR_f5 0.489629 0.167151 2.929 0.003398 **
+## CGPA 0.668661 0.076584 8.731 < 2e-16 ***
+## Research_f1 0.158488 0.046761 3.389 0.000701 ***
+##
+## Phi coefficients (precision model with identity link):
+## Estimate Std. Error z value Pr(>|z|)
+## (phi) 52.353 4.465 11.72 <2e-16 ***
+## ---
+## Signif. codes: 0 ’***’ 0.001 ’**’ 0.01 ’*’ 0.05 ’.’ 0.1 ’ ’ 1
+##
+## Type of estimator: ML (maximum likelihood)
+## Log-likelihood: 405.3 on 17 Df
+## Pseudo R-squared: 0.8511
+## Number of iterations: 27 (BFGS) + 2 (Fisher scoring)
+bptest(fit2)
+##
+## studentized Breusch-Pagan test
+##
+## data: fit2
+## BP = 29.797, df = 15, p-value = 0.01267
+shapiro.test(resid(fit2))
+##
+## Shapiro-Wilk normality test
+##
+## data: resid(fit2)
+## W = 0.96041, p-value = 8.794e-07
+plot(fit2)
+17
+0 50 100 150 200 250
+−3 −2 −1
+0 1 2
+3
+Obs. number
+Standardized weighted residuals 2
+betareg(formula = Chance.of.Admit ~ GRE.Score + TOEFL.Score + 
+ University.Rating_f + LOR_f + CGPA + Research_f, data = train)
+Residuals vs indices of obs.
+18
+0 50 100 150 200 250
+0.00 0.04 0.08 0.12
+Obs. number
+Cook's distance
+betareg(formula = Chance.of.Admit ~ GRE.Score + TOEFL.Score + 
+ University.Rating_f + LOR_f + CGPA + Research_f, data = train)
+Cook's distance plot
+19
+0.4 0.5 0.6 0.7 0.8 0.9
+0.05 0.15 0.25
+Predicted values
+Generalized leverage
+betareg(formula = Chance.of.Admit ~ GRE.Score + TOEFL.Score + 
+ University.Rating_f + LOR_f + CGPA + Research_f, data = train)
+Generalized leverage vs predicted values
+20
+0.0 0.5 1.0 1.5 2.0 2.5
+−3 −2 −1
+0 1 2
+3
+Linear predictor
+Standardized weighted residuals 2
+betareg(formula = Chance.of.Admit ~ GRE.Score + TOEFL.Score + 
+ University.Rating_f + LOR_f + CGPA + Research_f, data = train)
+Residuals vs linear predictor
+confint(fit2)
+## 2.5 % 97.5 %
+## (Intercept) -11.416802697 -8.316794040
+## GRE.Score 0.002411015 0.016338967
+## TOEFL.Score 0.005784456 0.032471934
+## University.Rating_f2 -0.313347529 0.031820855
+## University.Rating_f3 -0.389479863 -0.009818553
+## University.Rating_f4 -0.401901311 0.054616852
+## University.Rating_f5 -0.198801180 0.321738840
+## LOR_f2 -0.115648290 0.443280746
+## LOR_f2.5 -0.119825236 0.448677054
+## LOR_f3 -0.178131807 0.375289964
+## LOR_f3.5 -0.058157574 0.503430235
+## LOR_f4 -0.040156242 0.527740385
+## LOR_f4.5 0.031858194 0.649691820
+## LOR_f5 0.162019808 0.817238462
+## CGPA 0.518558440 0.818763146
+## Research_f1 0.066838144 0.250137710
+## (phi) 43.601429646 61.105307174
+## removed University rating
+fit3<- betareg(Chance.of.Admit ~ GRE.Score + TOEFL.Score + LOR_f+ CGPA
++ Research_f, data=train)
+lrtest(fit3,fit2)
+21
+## Likelihood ratio test
+##
+## Model 1: Chance.of.Admit ~ GRE.Score + TOEFL.Score + LOR_f + CGPA + Research_f
+## Model 2: Chance.of.Admit ~ GRE.Score + TOEFL.Score + University.Rating_f +
+## LOR_f + CGPA + Research_f
+## #Df LogLik Df Chisq Pr(>Chisq)
+## 1 13 397.50
+## 2 17 405.31 4 15.619 0.003576 **
+## ---
+## Signif. codes: 0 ’***’ 0.001 ’**’ 0.01 ’*’ 0.05 ’.’ 0.1 ’ ’ 1
+## removed research
+fit4<- betareg(Chance.of.Admit ~ GRE.Score + TOEFL.Score +University.Rating_f+ LOR_f+ CGPA, data=train)
+lrtest(fit4,fit2)
+## Likelihood ratio test
+##
+## Model 1: Chance.of.Admit ~ GRE.Score + TOEFL.Score + University.Rating_f +
+## LOR_f + CGPA
+## Model 2: Chance.of.Admit ~ GRE.Score + TOEFL.Score + University.Rating_f +
+## LOR_f + CGPA + Research_f
+## #Df LogLik Df Chisq Pr(>Chisq)
+## 1 16 399.86
+## 2 17 405.31 1 10.895 0.0009643 ***
+## ---
+## Signif. codes: 0 ’***’ 0.001 ’**’ 0.01 ’*’ 0.05 ’.’ 0.1 ’ ’ 1
+library(lsmeans)
+## Loading required package: emmeans
+## The ’lsmeans’ package is now basically a front end for ’emmeans’.
+## Users are encouraged to switch the rest of the way.
+## See help(’transition’) for more information, including how to
+## convert old ’lsmeans’ objects and scripts to work with ’emmeans’.
+lsmeans(fit2, pairwise~ LOR_f)
+## $lsmeans
+## LOR_f lsmean SE df asymp.LCL asymp.UCL
+## 1.5 0.719 0.02680 Inf 0.666 0.771
+## 2 0.750 0.01394 Inf 0.723 0.778
+## 2.5 0.750 0.01175 Inf 0.727 0.773
+## 3 0.738 0.00905 Inf 0.720 0.756
+## 3.5 0.761 0.00873 Inf 0.744 0.778
+## 4 0.765 0.00861 Inf 0.748 0.782
+## 4.5 0.782 0.01215 Inf 0.758 0.806
+## 5 0.806 0.01408 Inf 0.779 0.834
+##
+## Results are averaged over the levels of: University.Rating_f, Research_f
+## Confidence level used: 0.95
+22
+##
+## $contrasts
+## contrast estimate SE df z.ratio p.value
+## 1.5 - 2 -0.031818 0.0283 Inf -1.123 0.9520
+## 1.5 - 2.5 -0.031931 0.0289 Inf -1.106 0.9557
+## 1.5 - 3 -0.019439 0.0283 Inf -0.686 0.9974
+## 1.5 - 3.5 -0.042640 0.0285 Inf -1.495 0.8103
+## 1.5 - 4 -0.046454 0.0288 Inf -1.614 0.7419
+## 1.5 - 4.5 -0.063391 0.0306 Inf -2.072 0.4332
+## 1.5 - 5 -0.087645 0.0313 Inf -2.797 0.0957
+## 2 - 2.5 -0.000114 0.0166 Inf -0.007 1.0000
+## 2 - 3 0.012379 0.0158 Inf 0.782 0.9940
+## 2 - 3.5 -0.010823 0.0162 Inf -0.668 0.9978
+## 2 - 4 -0.014636 0.0167 Inf -0.876 0.9882
+## 2 - 4.5 -0.031574 0.0199 Inf -1.590 0.7567
+## 2 - 5 -0.055828 0.0210 Inf -2.661 0.1347
+## 2.5 - 3 0.012493 0.0136 Inf 0.917 0.9845
+## 2.5 - 3.5 -0.010709 0.0137 Inf -0.784 0.9940
+## 2.5 - 4 -0.014522 0.0141 Inf -1.031 0.9698
+## 2.5 - 4.5 -0.031460 0.0173 Inf -1.814 0.6107
+## 2.5 - 5 -0.055714 0.0188 Inf -2.969 0.0597
+## 3 - 3.5 -0.023202 0.0113 Inf -2.052 0.4467
+## 3 - 4 -0.027015 0.0118 Inf -2.290 0.2990
+## 3 - 4.5 -0.043953 0.0153 Inf -2.880 0.0767
+## 3 - 5 -0.068207 0.0170 Inf -4.012 0.0016
+## 3.5 - 4 -0.003813 0.0115 Inf -0.332 1.0000
+## 3.5 - 4.5 -0.020751 0.0148 Inf -1.400 0.8575
+## 3.5 - 5 -0.045005 0.0165 Inf -2.725 0.1150
+## 4 - 4.5 -0.016938 0.0142 Inf -1.193 0.9342
+## 4 - 5 -0.041192 0.0160 Inf -2.575 0.1650
+## 4.5 - 5 -0.024254 0.0175 Inf -1.382 0.8657
+##
+## Results are averaged over the levels of: University.Rating_f, Research_f
+## P value adjustment: tukey method for comparing a family of 8 estimates
+library(lsmeans)
+lsmeans(fit2, pairwise~ Research_f)
+lor significant comparisons: 3 vs. 5
+## $lsmeans
+## Research_f lsmean SE df asymp.LCL asymp.UCL
+## 0 0.745 0.00712 Inf 0.731 0.758
+## 1 0.773 0.00630 Inf 0.761 0.786
+##
+## Results are averaged over the levels of: University.Rating_f, LOR_f
+## Confidence level used: 0.95
+##
+## $contrasts
+## contrast estimate SE df z.ratio p.value
+## 0 - 1 -0.0288 0.00853 Inf -3.379 0.0007
+23
+##
+## Results are averaged over the levels of: University.Rating_f, LOR_f
+library(lsmeans)
+lsmeans(fit2, pairwise~ University.Rating_f)
+research and no research are significantly different
+## $lsmeans
+## University.Rating_f lsmean SE df asymp.LCL asymp.UCL
+## 1 0.776 0.01534 Inf 0.745 0.806
+## 2 0.750 0.00938 Inf 0.732 0.769
+## 3 0.739 0.00787 Inf 0.724 0.754
+## 4 0.744 0.01097 Inf 0.723 0.766
+## 5 0.786 0.01301 Inf 0.760 0.812
+##
+## Results are averaged over the levels of: LOR_f, Research_f
+## Confidence level used: 0.95
+##
+## $contrasts
+## contrast estimate SE df z.ratio p.value
+## 1 - 2 0.02533 0.0154 Inf 1.640 0.4717
+## 1 - 3 0.03647 0.0171 Inf 2.134 0.2055
+## 1 - 4 0.03151 0.0208 Inf 1.514 0.5530
+## 1 - 5 -0.01048 0.0227 Inf -0.462 0.9907
+## 2 - 3 0.01114 0.0101 Inf 1.107 0.8028
+## 2 - 4 0.00618 0.0151 Inf 0.411 0.9940
+## 2 - 5 -0.03581 0.0173 Inf -2.073 0.2318
+## 3 - 4 -0.00496 0.0126 Inf -0.393 0.9950
+## 3 - 5 -0.04695 0.0148 Inf -3.177 0.0129
+## 4 - 5 -0.04199 0.0148 Inf -2.844 0.0360
+##
+## Results are averaged over the levels of: LOR_f, Research_f
+## P value adjustment: tukey method for comparing a family of 5 estimates
+coef(fit2)
+## (Intercept) GRE.Score TOEFL.Score
+## -9.866798368 0.009374991 0.019128195
+## University.Rating_f2 University.Rating_f3 University.Rating_f4
+## -0.140763337 -0.199649208 -0.173642229
+## University.Rating_f5 LOR_f2 LOR_f2.5
+## 0.061468830 0.163816228 0.164425909
+## LOR_f3 LOR_f3.5 LOR_f4
+## 0.098579078 0.222636330 0.243792072
+## LOR_f4.5 LOR_f5 CGPA
+## 0.340775007 0.489629135 0.668660793
+## Research_f1 (phi)
+## 0.158487927 52.353368410
+24
+linearHypothesis(fit2, c(0, 1, -1, 0, 0, 0, 0,0,0,0,0,0,0,0,0,0,0))
+## Linear hypothesis test
+##
+## Hypothesis:
+## GRE.Score - TOEFL.Score = 0
+##
+## Model 1: restricted model
+## Model 2: Chance.of.Admit ~ GRE.Score + TOEFL.Score + University.Rating_f +
+## LOR_f + CGPA + Research_f
+##
+## Res.Df Df Chisq Pr(>Chisq)
+## 1 256
+## 2 255 1 1.1864 0.2761
+fit2.loglog <- betareg(Chance.of.Admit ~ GRE.Score + TOEFL.Score + University.Rating_f + LOR_f+ CGPA
++ Research_f, data=train, link = "loglog")
+summary(fit2)$pseudo.r.squared
+## [1] 0.8511048
+summary(fit2.loglog)$pseudo.r.squared
+## [1] 0.8513142
+AIC(fit2,fit2.loglog)
+## df AIC
+## fit2 17 -776.6193
+## fit2.loglog 17 -766.1854
+fit2.pred <- predict(fit2, test, type=“response”) accuracy.fit2 <- mean(fit2.pred == test$admit.index) accuracy.fit2
+25
