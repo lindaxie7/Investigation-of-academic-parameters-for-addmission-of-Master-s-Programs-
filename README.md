@@ -1,6 +1,6 @@
 # Investigation-of-academic-parameters-for-addmission-of-Master-Programs
 
-[R Code](https://github.com/lindaxie7/PyBer-analysis/blob/main/PyBer_Challenge_starter_code.ipynb)
+[R Code](https://github.com/lindaxie7/Investigation-of-parameters-for-addmission-of-Master-Programs-/blob/main/R%20scripts.Rmd)
 
 ## Overview of Project
 The purpose of this project is to analyze the factors considered in Graduate admission applications, to predict factors resulting in high chances of getting admitted into graduate programs. The parameters are: 
