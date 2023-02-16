@@ -68,6 +68,17 @@ Similar to the letters of recommendation ratings, we used tukey comparisons in t
 
 ## Results
 
+![1](https://user-images.githubusercontent.com/38533045/219442623-7f199ec8-abef-43eb-8c97-825a9a043135.png)
+![2](https://user-images.githubusercontent.com/38533045/219442629-bf15a4e1-5256-4006-90a4-1926cfe2e698.png)
+![3](https://user-images.githubusercontent.com/38533045/219442630-1dbf9fd9-ef47-44f6-997d-002c0bbc99ae.png)
+![4](https://user-images.githubusercontent.com/38533045/219442633-b6316d13-19de-4bb0-a94f-06d43fd4ed84.png)
+![5](https://user-images.githubusercontent.com/38533045/219442634-948bc414-a475-4b5c-8344-e3653661049e.png)
+![6](https://user-images.githubusercontent.com/38533045/219442635-4b43c5b4-7d52-488c-bc69-dea89612d531.png)
+![7](https://user-images.githubusercontent.com/38533045/219442639-4e638504-fca3-4175-ae60-5269f3d0aae4.png)
+![8](https://user-images.githubusercontent.com/38533045/219442642-aa17a254-0d4c-4e82-afa5-aa19e7c6df78.png)
+![9](https://user-images.githubusercontent.com/38533045/219442643-5ea20d64-9196-47a6-84c4-1bdb22583050.png)
+![10](https://user-images.githubusercontent.com/38533045/219442644-23689237-46f4-471b-ba0d-195d95a0a8ef.png)
+
 
 
 
