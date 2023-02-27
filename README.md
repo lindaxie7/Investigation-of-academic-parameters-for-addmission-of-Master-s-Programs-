@@ -23,7 +23,7 @@ The purpose of this project is to analyze the factors considered in Graduate adm
 
 ## Dataset
 
-Public data from Kaggle : 
+Public data from Kaggle : https://www.kaggle.com/datasets/mohansacharya/graduate-admissions
 
 ## Methods
 
