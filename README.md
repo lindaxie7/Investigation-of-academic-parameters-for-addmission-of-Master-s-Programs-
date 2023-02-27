@@ -21,6 +21,10 @@ The purpose of this project is to analyze the factors considered in Graduate adm
 
 8.	Chance of Admit (ranging from 0 to 1)
 
+## Dataset
+
+Public data from Kaggle : 
+
 ## Methods
 
 ### Initial evaluation
